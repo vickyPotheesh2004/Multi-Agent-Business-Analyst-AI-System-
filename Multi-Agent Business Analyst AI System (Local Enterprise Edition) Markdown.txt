@@ -1,0 +1,83 @@
+# Preliminary Design Review (PDR)
+**Project:** Multi-Agent Business Analyst AI System (Local Enterprise Edition)
+**Status:** Architecture Finalization & Sprint Planning
+**Objective:** To architect and deploy an autonomous, open-source multi-agent AI system for expert-level business analysis. Engineered for strictly local execution on consumer-grade hardware (16GB RAM limit), the system merges a sequential AI pipeline with CPU-optimized mathematics to deliver transparent, board-ready reports with absolute data privacy and zero baseline operational cost.
+
+---
+
+## 1. Executive Summary
+This document outlines the architecture for a completely local, zero-budget enterprise AI analyst. By stripping away dependencies on commercial APIs and utilizing hyper-optimized Rust and Python libraries, the system guarantees data privacy while outperforming standard cloud-based workflows. It fuses "Curiosity-Driven" LLM reasoning, Explainable AI (XAI), and Causal Inference modeling into a frictionless, one-click deployable package.
+
+## 2. Benchmark Defeat Strategy (The "Heavy Difference")
+To beat commercial SaaS solutions without spending a dime, we are attacking the problem at the hardware, memory, and algorithmic levels:
+* **Zero-Latency Networking:** Routing the primary LangGraph pipeline through a local Ollama instance eliminates the standard 100-300ms network round-trip delay inherent in cloud API calls.
+* **Bare-Metal CPU Optimization:** Instead of relying on slow Python loops for financial modeling, the CFO Agent utilizes `@jit` compilation via Numba and vectorized NumPy arrays, running Monte Carlo simulations at near-C speeds directly on the CPU.
+* **Rust-Powered Speeds:** Dependency resolution and environment setup are handled by Astral's `uv` (written in Rust), which is 10-100x faster than standard `pip`.
+* **Zero-Memory Vector Search:**  By utilizing LanceDB over ChromaDB, vector embeddings are searched directly from the SSD using the Lance columnar format, completely freeing up active RAM for the LLM context window.
+
+## 3. System Architecture & Data Flow
+
+1.  **Ingestion & Structuring:** Raw enterprise data (financial CSVs, logs) and unstructured documents (annual reports, 10-Ks parsed via `pdfplumber`/`MarkItDown`) are ingested and converted into a structured `BA_State` dictionary.
+2.  **Adaptive Supervisor Pipeline:** LangGraph orchestrates the flow. Traffic is directed strictly one-way.  Crucially, a `trim_messages` sliding-window node automatically compresses or drops the oldest conversation history to prevent context overflow crashes.
+3.  **Tri-Agent Pod Execution:**
+    * **Auditor:** Scans for anomalies using Scikit-Learn.
+    * **CFO:** Runs Numba-optimized financial projections.
+    * **Solutions/Lead Analyst:** Synthesizes data and maps Causal DAGs.
+4.  **HITL Curiosity Loop:** If confidence drops below threshold, the loop pauses (max 5 iterations) and triggers the Streamlit UI for user intervention.
+5.  **Explainability Engine:** Anomalies are processed through `shap.TreeExplainer` to extract the mathematical "why" behind flagged data.
+6.  **Output Formulation:** The final payload is formatted via ReportLab and NetworkX into a high-DPI PDF.
+
+
+
+## 4. Modules Implementation Plan
+
+### Module 1: Infrastructure & Economic Resource Governor
+* **Frictionless Installer:** A `setup.sh` script utilizing `uv` for lightning-fast dependency resolution. It explicitly fetches the **Q4_K_M quantized** Llama 3.1 8B model (reducing the LLM RAM footprint from 15GB to ~4.9GB).
+* **Resource Governor (`psutil`):** Actively monitors RAM. If usage exceeds 14GB, triggers garbage collection (`gc`) and throttles the inference queue.
+* **Cloud Escalation Protocol:** A 3-strike local failure system. If local generation fails, it calculates API cost via `tiktoken`. If cost < $0.10, it escalates to Gemini; otherwise, it halts for Streamlit UI budget approval.
+
+### Module 2: Forensics & Explainable AI (XAI)
+* **Memory Layer:** Embedded **LanceDB** instance. Bypasses RAM constraints by running similarity searches directly against the SSD.
+* **Fraud Detection:** CPU-bound `scipy.stats.chisquare` for Benford's Law and Scikit-Learn's Isolation Forest.
+* **Mathematical Transparency:** Memory-capped `shap` values applied to flagged anomalies to isolate the exact variables triggering the alert.
+
+### Module 3: Interactive Curiosity Framework (HITL 2.0)
+* **Context-Aware Debate:** AutoGen-style internal debate capped at 5 iterations. The state dictionary enforces a `trim_messages` protocol to keep the LLM from hallucinating under heavy token loads.
+* **Streamlit UI:** If the Skeptic Validator pauses the system, a local dashboard launches, displaying real-time "Decision Confidence" bars and offering A/B/C strategic paths for the operator.
+
+### Module 4: Causal Inference & NLP Synthesis
+* **Causal Mapping:** The Lead Analyst Pod maps root-cause flowcharts (e.g., Ad Spend ➡️ Traffic ➡️ Server Latency ➡️ Churn) and utilizes `networkx` to visualize the logic.
+* **Translation Engine:** Transforms complex SHAP arrays into declarative, plain-English C-suite summaries.
+
+### Module 5: Output Generation
+* **PDF Engine:** Merges `ReportLab` text scaffolding with `Plotly` graphs and `networkx` DAGs to produce the final Deep-Dive and Executive Snapshot PDFs.
+
+## 5. Agile Implementation Sprint (8-Week)
+
+* **Milestone 1: Local Setup, Forensics & Security (Weeks 1-2)**
+    * Build `setup.sh` utilizing `uv`, LLM Loader (Q4_K_M), and `psutil` Governor.
+    * Construct LangGraph Pipeline and integrate LanceDB and `pdfplumber` ingestion.
+* **Milestone 2: Agent Strategy & Interactive HITL (Weeks 3-4)**
+    * Build Tri-Agent Pod template and implement `trim_messages` context gating.
+    * Develop Streamlit UI with live Confidence tracking. Deploy Auditor and Role-Switching Pods.
+* **Milestone 3: Advanced Math, XAI, & Causal Logic (Weeks 5-6)**
+    * Deploy CFO Pod with Numba-compiled Monte Carlo scripts.
+    * Integrate `shap` with strict 500-row sample limits. Develop Lead Analyst Pod for DAG generation.
+* **Milestone 4: Integration, Polish, & Release (Weeks 7-8)**
+    * Draft ReportLab formatting for final PDFs.
+    * Execute full integration tests to confirm the 14GB RAM ceiling holds under maximum batch loads.
+    * Finalize `README.md`, run pre-commit security hooks, and push to local Git.
+
+## 6. Evaluation Criteria & Tech Stack
+* **Efficiency:** RAM stays < 14GB; `uv` installations resolve in seconds; LanceDB SSD querying eliminates vector memory bloat.
+* **Explainability:** 100% of anomalies include SHAP summaries and Causal DAGs.
+* **Frictionless:** Fresh clone to running system achieved purely via `setup.sh` and `uv`.
+
+| Category | Open-Source Tools |
+| :--- | :--- |
+| **Orchestration & UI** | LangGraph, LangChain, Streamlit |
+| **LLMs & Cost Control** | Ollama (Llama 3.1 8B Q4_K_M), Gemini API, `tiktoken` |
+| **Audit-Ready Math** | NumPy, SciPy, Numba (@jit) |
+| **Forensics & XAI** | Scikit-Learn, `shap` |
+| **Memory & Hardware** | LanceDB (Disk-based), `psutil`, `gc` |
+| **Ingestion & Output** | `pdfplumber`, ReportLab, Plotly, `networkx`, `uv` |
